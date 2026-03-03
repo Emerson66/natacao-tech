@@ -25,6 +25,17 @@ export const useLevelsStore = defineStore('levels', () => {
       loading.value = false
     }
   }
+
+  async function createNivel(payload: any) {
+    try {
+      await api.post('/api/niveis', payload)
+      await fetchLevels()
+    } catch (error) {
+      console.error('Erro ao criar nível:', error)
+      throw error
+    }
+  }
+
   async function updateNivel(uuid: string, payload: any) {
     try {
       await api.put(`/api/niveis/${uuid}`, payload)
@@ -39,5 +50,6 @@ export const useLevelsStore = defineStore('levels', () => {
     loading,
     fetchLevels,
     updateNivel,
+    createNivel,
   }
 })

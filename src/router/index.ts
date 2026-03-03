@@ -101,6 +101,15 @@ const router = createRouter({
         },
 
         {
+          path: 'admin/niveis',
+          name: 'admin-niveis',
+          component: () => import('@/modules/admin/views/AdminNiveisView.vue'),
+          meta: {
+            requiresAuth: true,
+            allowedRoles: ['ADMIN', 'DIRETOR'],
+          },
+        },
+        {
           path: 'admin/habilidades',
           name: 'admin-habilidades',
           component: () => import('@/modules/admin/views/HabilidadesView.vue'),
