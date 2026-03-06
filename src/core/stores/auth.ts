@@ -132,12 +132,10 @@ export const useAuthStore = defineStore('auth', () => {
       throw error
     }
   }
-  async function promoverDiretor(uuid: string) {
-    try {
-      await api.patch(`/api/usuarios/${uuid}/promover-diretor`)
-    } catch (error) {
-      throw error
-    }
+  async function promoverDiretor(uuid: string, academiaId: string) {
+    await api.patch(`/api/usuarios/${uuid}/promover-diretor`, null, {
+      params: { academiaId },
+    })
   }
   async function rebaixarUsuario(uuid: string) {
     try {

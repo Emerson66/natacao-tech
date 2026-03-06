@@ -592,8 +592,8 @@ async function transferirAluno(alunoUuid: string) {
 async function atualizarProfessor(novoProfessorId: string) {
   if (!selectedClass.value) return
   try {
-    await api.patch(`/api/turmas/${selectedClass.value.uuid}/professor`, {
-      professorId: novoProfessorId,
+    await api.patch(`/api/turmas/${selectedClass.value.uuid}/professor`, null, {
+      params: { professorId: novoProfessorId },
     })
     await classesStore.fetchClasses()
     selectedClass.value = classesStore.classes.find(

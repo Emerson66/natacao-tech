@@ -233,13 +233,7 @@ onUnmounted(() => {
 async function carregarTurmas() {
   loadingTurmas.value = true
   try {
-    const endpoint = authStore.isCoordenador
-      ? '/api/turmas/todas'
-      : '/api/turmas'
-
-    const { data } = await api.get<Turma[]>(endpoint).catch(async () => {
-      return await api.get<Turma[]>('/api/turmas')
-    })
+    const { data } = await api.get<Turma[]>('/api/turmas')
     todasTurmas.value = Array.isArray(data) ? data : []
   } catch {
     toast.add({

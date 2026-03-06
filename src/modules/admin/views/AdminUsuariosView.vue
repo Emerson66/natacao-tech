@@ -37,6 +37,7 @@ const abaAtiva = ref(isDiretor.value ? 'professores' : 'turmas')
 
 interface Professor {
   uuid: string
+  usuarioUuid: string
   nome: string
   email: string
   nomeAcademia?: string
@@ -481,10 +482,15 @@ async function confirmarPromoverDiretor() {
     return
   }
   submittingPromoverDiretor.value = true
+
+  console.log('UUID:', profParaPromover.value.uuid)
+  console.log('academiaId:', academiaIdParaDiretor.value)
+  console.log('Objeto completo:', JSON.stringify(profParaPromover.value))
   try {
     await api.patch(
-      `/api/usuarios/${profParaPromover.value.uuid}/promover-diretor`,
-      { academiaId: academiaIdParaDiretor.value }
+      `/api/usuarios/${profParaPromover.value.usuarioUuid}/promover-diretor`,
+      null,
+      { params: { academiaId: academiaIdParaDiretor.value } }
     )
 
     toast.add({
@@ -515,7 +521,7 @@ function rebaixarUsuario(prof: Professor) {
     acceptClass: 'p-button-warning',
     accept: async () => {
       try {
-        await api.patch(`/api/usuarios/${prof.uuid}/rebaixar-usuario`)
+        await api.patch(`/api/usuarios/${prof.usuarioUuid}/rebaixar-usuario`)
         toast.add({
           severity: 'info',
           summary: `${prof.nome} voltou a ser Professor.`,

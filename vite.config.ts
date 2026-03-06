@@ -45,11 +45,13 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        headers: { Origin: 'http://localhost:8080' },
       },
       '/auth': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        headers: { Origin: 'http://localhost:8080' },
       },
     },
   },

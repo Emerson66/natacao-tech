@@ -6,6 +6,7 @@ export interface NivelDTO {
 
 export interface ProfessorResumoDTO {
   uuid: string
+  usuarioUuid: string
   nome: string
   email: string
   nomeAcademia: string
