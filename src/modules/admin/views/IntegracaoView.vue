@@ -33,7 +33,7 @@ async function carregarAcademias() {
   carregandoAcademias.value = true
   try {
     const { data } = await api.get<AcademiaDTO[]>('/api/academias')
-    academias.value = data.map((a: any) => ({
+    academias.value = (data as any[]).map((a: any) => ({
       id: a.id,
       uuid: a.uuid,
       nome: a.nome,
@@ -69,13 +69,24 @@ function parseResultado(
 async function importarAlunos() {
   if (!authStore.isAuthenticated || !academiaSelecionada.value) return
 
+  const academiaUuid = academiaSelecionada.value.uuid
+  if (!academiaUuid) {
+    toast.add({
+      severity: 'error',
+      summary: 'Erro',
+      detail: 'Academia sem UUID. Recarregue a página.',
+      life: 6000,
+    })
+    return
+  }
+
   importando.value = true
   resultadoImportacao.value = null
   erroImportacao.value = null
 
   try {
     const { data } = await api.post<string>(
-      `/api/integracoes/evo/importar-alunos/${academiaSelecionada.value.uuid}`
+      `/api/integracoes/evo/importar-alunos/${academiaUuid}`
     )
 
     if (typeof data === 'string' && data.toLowerCase().startsWith('erro')) {
