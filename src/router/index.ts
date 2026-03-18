@@ -99,7 +99,6 @@ const router = createRouter({
             allowedRoles: ['ADMIN', 'DIRETOR'],
           },
         },
-
         {
           path: 'admin/niveis',
           name: 'admin-niveis',
@@ -113,6 +112,15 @@ const router = createRouter({
           path: 'admin/habilidades',
           name: 'admin-habilidades',
           component: () => import('@/modules/admin/views/HabilidadesView.vue'),
+          meta: {
+            requiresAuth: true,
+            allowedRoles: ['ADMIN', 'DIRETOR'],
+          },
+        },
+        {
+          path: 'admin/reset-senha',
+          name: 'admin-reset-senha',
+          component: () => import('@/modules/admin/views/ResetSenhaView.vue'),
           meta: {
             requiresAuth: true,
             allowedRoles: ['ADMIN', 'DIRETOR'],
