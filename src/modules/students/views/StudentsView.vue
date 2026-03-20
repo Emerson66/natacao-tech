@@ -1,22 +1,51 @@
 <template>
   <div class="space-y-6">
-    <div class="flex justify-between items-center flex-wrap gap-3">
-      <div class="flex items-center gap-3 flex-wrap">
-        <h1 class="text-2xl font-bold text-gray-900">Alunos</h1>
+    <div class="flex flex-col gap-3">
+      <div class="flex justify-between items-center flex-wrap gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-2xl font-bold text-gray-900">Alunos</h1>
+          <button
+            @click="toggleFiltro"
+            class="text-sm font-medium px-3 py-1.5 rounded-md border transition-colors"
+            :class="
+              mostrarApenasMeus
+                ? 'bg-sky-100 text-sky-700 border-sky-200'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            "
+          >
+            {{ mostrarApenasMeus ? 'Ver Todos' : 'Meus Alunos' }}
+          </button>
+        </div>
+
         <button
-          @click="toggleFiltro"
-          class="text-sm font-medium px-3 py-1.5 rounded-md border transition-colors"
-          :class="
-            mostrarApenasMeus
-              ? 'bg-sky-100 text-sky-700 border-sky-200'
-              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-          "
+          @click="openModal()"
+          class="bg-sky-500 text-white px-4 py-2 rounded-lg hover:bg-sky-600 flex items-center gap-2 transition-colors shrink-0"
         >
-          {{ mostrarApenasMeus ? 'Ver Todos' : 'Meus Alunos' }}
+          <i class="pi pi-plus text-sm"></i>
+          <span>Novo Aluno</span>
         </button>
       </div>
 
       <div class="flex items-center gap-2 flex-wrap">
+        <div class="relative flex-1 min-w-[200px] max-w-sm">
+          <i
+            class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"
+          ></i>
+          <input
+            v-model="buscaNome"
+            type="text"
+            placeholder="Buscar aluno por nome..."
+            class="w-full pl-9 pr-8 py-1.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:border-sky-400 placeholder:text-slate-400"
+          />
+          <button
+            v-if="buscaNome"
+            @click="buscaNome = ''"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+          >
+            <i class="pi pi-times text-xs"></i>
+          </button>
+        </div>
+
         <select
           v-model="filtroProfessor"
           class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:border-sky-400"
@@ -27,13 +56,12 @@
           </option>
         </select>
 
-        <button
-          @click="openModal()"
-          class="bg-sky-500 text-white px-4 py-2 rounded-lg hover:bg-sky-600 flex items-center gap-2 transition-colors"
+        <span
+          v-if="buscaNome || filtroProfessor"
+          class="text-xs text-slate-400 font-medium whitespace-nowrap"
         >
-          <i class="pi pi-plus text-sm"></i>
-          <span>Novo Aluno</span>
-        </button>
+          {{ alunosFiltrados.length }} resultado(s)
+        </span>
       </div>
     </div>
 
@@ -146,170 +174,224 @@
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
     >
       <div
-        class="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+        class="bg-white rounded-xl max-w-2xl w-full shadow-2xl flex flex-col"
+        style="max-height: 90vh"
       >
-        <h2 class="text-xl font-bold text-slate-800 mb-6">
-          {{ editingId ? 'Editar Aluno' : 'Novo Aluno' }}
-        </h2>
-        <form @submit.prevent="saveStudent" class="space-y-4">
-          <div class="grid grid-cols-2 gap-5">
-            <div class="col-span-2">
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5"
-                >Nome Completo <span class="text-red-500">*</span></label
-              >
-              <input
-                v-model="form.name"
-                type="text"
-                required
-                class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm outline-none"
-              />
-            </div>
+        <div class="px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
+          <h2 class="text-xl font-bold text-slate-800">
+            {{ editingId ? 'Editar Aluno' : 'Novo Aluno' }}
+          </h2>
+        </div>
 
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5"
-                >Data de Nascimento <span class="text-red-500">*</span></label
-              >
-              <input
-                v-model="form.dataNascimento"
-                type="date"
-                required
-                :max="dataMaxNascimento"
-                class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm outline-none"
-              />
-              <p
-                v-if="form.dataNascimento"
-                class="text-xs text-sky-600 mt-1 font-medium"
-              >
-                <i class="pi pi-info-circle mr-1"></i>
-                {{ calcularIdade(form.dataNascimento) }} anos
-              </p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5"
-                >Nível <span class="text-red-500">*</span></label
-              >
-              <select
-                v-model="form.nivelId"
-                :required="!editingId"
-                :disabled="!!editingId"
-                class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm bg-white outline-none disabled:bg-slate-100"
-              >
-                <option value="" disabled>Selecione um nível</option>
-                <option
-                  v-for="level in levelsStore.levels"
-                  :key="level.uuid"
-                  :value="level.uuid"
+        <div class="overflow-y-auto flex-1 px-6 py-4">
+          <form @submit.prevent="saveStudent" class="space-y-4">
+            <div class="grid grid-cols-2 gap-5">
+              <div class="col-span-2">
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5"
+                  >Nome Completo <span class="text-red-500">*</span></label
                 >
-                  {{ level.nome }}
-                </option>
-              </select>
-              <p v-if="editingId" class="text-[10px] text-slate-400 mt-1">
-                Nível atual: {{ form.level }}
-              </p>
-            </div>
+                <input
+                  v-model="form.name"
+                  type="text"
+                  required
+                  class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm outline-none"
+                />
+              </div>
 
-            <div class="col-span-2">
-              <div class="flex items-center justify-between mb-2">
-                <label class="block text-sm font-semibold text-slate-700"
-                  >Turmas</label
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5"
+                  >Data de Nascimento <span class="text-red-500">*</span></label
                 >
+                <input
+                  v-model="form.dataNascimento"
+                  type="date"
+                  required
+                  :max="dataMaxNascimento"
+                  class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm outline-none"
+                />
+                <p
+                  v-if="form.dataNascimento"
+                  class="text-xs text-sky-600 mt-1 font-medium"
+                >
+                  <i class="pi pi-info-circle mr-1"></i>
+                  {{ calcularIdade(form.dataNascimento) }} anos
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5"
+                  >Nível <span class="text-red-500">*</span></label
+                >
+
+                <div
+                  v-if="levelsStore.loading"
+                  class="flex items-center gap-2 text-sm text-slate-400 border border-slate-200 rounded-lg px-3 py-2 bg-slate-50"
+                >
+                  <i class="pi pi-spin pi-spinner text-sky-400"></i>
+                  Carregando níveis...
+                </div>
+
+                <div
+                  v-else-if="levelsStore.levels.length === 0"
+                  class="text-sm text-red-500 border border-red-200 rounded-lg px-3 py-2 bg-red-50"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  Nenhum nível cadastrado. Cadastre em Admin › Níveis.
+                </div>
+
                 <select
-                  v-model="filtroModalProfessor"
-                  class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-500 focus:outline-none focus:border-sky-400"
+                  v-else
+                  v-model="form.nivelId"
+                  :required="!editingId"
+                  :disabled="!!editingId"
+                  class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm bg-white outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
                 >
-                  <option value="">Todos os professores</option>
+                  <option value="" disabled>Selecione um nível</option>
                   <option
-                    v-for="p in professoresUnicosModal"
-                    :key="p"
-                    :value="p"
+                    v-for="level in levelsStore.levels"
+                    :key="level.uuid"
+                    :value="level.uuid"
                   >
-                    {{ p }}
+                    {{ level.nome }}
                   </option>
                 </select>
+
+                <p v-if="editingId" class="text-[10px] text-slate-400 mt-1">
+                  Nível atual: <strong>{{ form.level }}</strong>
+                </p>
               </div>
-              <div
-                class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-slate-100 p-2 rounded-lg bg-slate-50"
-              >
-                <label
-                  v-for="c in turmasFiltradas"
-                  :key="c.uuid"
-                  class="flex items-center space-x-3 bg-white p-2.5 rounded-md border border-slate-100 cursor-pointer hover:border-sky-200 hover:bg-sky-50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    :value="c.uuid"
-                    v-model="form.turmasIds"
-                    class="rounded text-sky-500 focus:ring-sky-500 border-slate-300 w-4 h-4"
-                  />
-                  <div class="flex flex-col min-w-0">
-                    <span
-                      class="text-sm font-semibold text-slate-700 truncate"
-                      >{{ c.nome }}</span
-                    >
+
+              <div class="col-span-2">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-sm font-semibold text-slate-700"
+                    >Turmas</label
+                  >
+                  <div class="flex items-center gap-2">
                     <span class="text-xs text-slate-400">
-                      {{ c.horarioInicio?.substring?.(0, 5) ?? '' }}
-                      <span v-if="c.professor?.nome">
-                        · {{ c.professor.nome }}</span
-                      >
+                      {{ form.turmasIds.length }} selecionada(s)
                     </span>
+                    <select
+                      v-model="filtroModalProfessor"
+                      class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-500 focus:outline-none focus:border-sky-400"
+                    >
+                      <option value="">Todos os professores</option>
+                      <option
+                        v-for="p in professoresUnicosModal"
+                        :key="p"
+                        :value="p"
+                      >
+                        {{ p }}
+                      </option>
+                    </select>
                   </div>
-                </label>
+                </div>
+
                 <div
-                  v-if="turmasFiltradas.length === 0"
-                  class="col-span-full text-xs text-slate-400 p-2 text-center"
+                  class="border border-slate-200 rounded-lg bg-slate-50 overflow-hidden"
                 >
-                  Nenhuma turma encontrada.
+                  <div class="overflow-y-auto" style="max-height: 180px">
+                    <div class="p-2 space-y-1.5">
+                      <label
+                        v-for="c in turmasFiltradas"
+                        :key="c.uuid"
+                        class="flex items-center gap-3 bg-white px-3 py-2.5 rounded-md border border-slate-100 cursor-pointer hover:border-sky-200 hover:bg-sky-50 transition-colors"
+                        :class="{
+                          'border-sky-300 bg-sky-50': form.turmasIds.includes(
+                            c.uuid
+                          ),
+                        }"
+                      >
+                        <input
+                          type="checkbox"
+                          :value="c.uuid"
+                          v-model="form.turmasIds"
+                          class="rounded text-sky-500 focus:ring-sky-500 border-slate-300 w-4 h-4 shrink-0"
+                        />
+                        <div class="flex flex-col min-w-0">
+                          <span
+                            class="text-sm font-semibold text-slate-700 truncate"
+                          >
+                            {{ c.nome }}
+                          </span>
+                          <span class="text-xs text-slate-400">
+                            {{ c.horarioInicio?.substring?.(0, 5) ?? '' }}
+                            <span v-if="c.professor?.nome">
+                              · {{ c.professor.nome }}
+                            </span>
+                            <span v-if="c.nivelAlvo?.nome" class="text-sky-500">
+                              · {{ c.nivelAlvo.nome }}
+                            </span>
+                          </span>
+                        </div>
+                      </label>
+
+                      <div
+                        v-if="turmasFiltradas.length === 0"
+                        class="text-xs text-slate-400 py-4 text-center"
+                      >
+                        Nenhuma turma encontrada.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="turmasFiltradas.length > 4"
+                    class="px-3 py-1.5 bg-slate-100 border-t border-slate-200 text-[10px] text-slate-400 text-center"
+                  >
+                    <i class="pi pi-angle-down mr-1"></i>
+                    Role para ver mais {{ turmasFiltradas.length }} turmas
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5"
-                >Contato (WhatsApp) <span class="text-red-500">*</span></label
-              >
-              <input
-                v-model="form.contact"
-                type="text"
-                required
-                placeholder="(00) 00000-0000"
-                class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm outline-none"
-              />
-            </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5"
+                  >Contato (WhatsApp) <span class="text-red-500">*</span></label
+                >
+                <input
+                  v-model="form.contact"
+                  type="text"
+                  required
+                  placeholder="(00) 00000-0000"
+                  class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm outline-none"
+                />
+              </div>
 
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1.5"
-                >Status</label
-              >
-              <select
-                v-model="form.status"
-                required
-                class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm bg-white outline-none"
-              >
-                <option value="active">Ativo</option>
-                <option value="inactive">Inativo</option>
-              </select>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5"
+                  >Status</label
+                >
+                <select
+                  v-model="form.status"
+                  required
+                  class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm bg-white outline-none"
+                >
+                  <option value="active">Ativo</option>
+                  <option value="inactive">Inativo</option>
+                </select>
+              </div>
             </div>
-          </div>
+          </form>
+        </div>
 
-          <div
-            class="flex justify-end space-x-3 pt-6 mt-6 border-t border-slate-100"
+        <div
+          class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 shrink-0"
+        >
+          <button
+            type="button"
+            @click="showModal = false"
+            class="px-5 py-2.5 border border-slate-200 rounded-lg text-slate-600 font-medium hover:bg-slate-50 transition-colors"
           >
-            <button
-              type="button"
-              @click="showModal = false"
-              class="px-5 py-2.5 border border-slate-200 rounded-lg text-slate-600 font-medium hover:bg-slate-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="px-5 py-2.5 bg-sky-500 text-white font-medium rounded-lg hover:bg-sky-600 shadow-sm shadow-sky-200 transition-colors"
-            >
-              Salvar
-            </button>
-          </div>
-        </form>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            @click="saveStudent"
+            class="px-5 py-2.5 bg-sky-500 text-white font-medium rounded-lg hover:bg-sky-600 shadow-sm shadow-sky-200 transition-colors"
+          >
+            Salvar
+          </button>
+        </div>
       </div>
     </div>
 
@@ -377,6 +459,7 @@ const editingId = ref<string | null>(null)
 const mostrarApenasMeus = ref(false)
 const filtroProfessor = ref('')
 const filtroModalProfessor = ref('')
+const buscaNome = ref('')
 
 const historicoModal = ref<{ visivel: boolean; dados: any[] }>({
   visivel: false,
@@ -434,16 +517,27 @@ const turmasFiltradas = computed(() => {
 })
 
 const alunosFiltrados = computed(() => {
-  if (!filtroProfessor.value) return studentsStore.students
+  let lista = studentsStore.students
 
-  const turmasDoProf = classesStore.classes
-    .filter((c: any) => c.professor?.nome === filtroProfessor.value)
-    .map((c: any) => c.nome)
+  if (buscaNome.value.trim()) {
+    const q = buscaNome.value.trim().toLowerCase()
+    lista = lista.filter((s: any) =>
+      (s.name ?? s.nome ?? '').toLowerCase().includes(q)
+    )
+  }
 
-  return studentsStore.students.filter((s: any) => {
-    if (!s.turmas || s.turmas.length === 0) return false
-    return s.turmas.some((t: string) => turmasDoProf.includes(t))
-  })
+  if (filtroProfessor.value) {
+    const turmasDoProf = classesStore.classes
+      .filter((c: any) => c.professor?.nome === filtroProfessor.value)
+      .map((c: any) => c.nome)
+
+    lista = lista.filter((s: any) => {
+      if (!s.turmas || s.turmas.length === 0) return false
+      return s.turmas.some((t: string) => turmasDoProf.includes(t))
+    })
+  }
+
+  return lista
 })
 
 onMounted(async () => {
@@ -470,8 +564,12 @@ async function abrirHistorico(uuid: string) {
   historicoModal.value.visivel = true
 }
 
-function openModal(student?: any) {
+async function openModal(student?: any) {
   filtroModalProfessor.value = ''
+
+  if (levelsStore.levels.length === 0) {
+    await levelsStore.fetchLevels()
+  }
 
   if (student) {
     editingId.value = student.id
