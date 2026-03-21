@@ -242,9 +242,8 @@
                 <select
                   v-else
                   v-model="form.nivelId"
-                  :required="!editingId"
-                  :disabled="!!editingId"
-                  class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm bg-white outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  required
+                  class="block w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm bg-white outline-none"
                 >
                   <option value="" disabled>Selecione um nível</option>
                   <option
@@ -257,7 +256,8 @@
                 </select>
 
                 <p v-if="editingId" class="text-[10px] text-slate-400 mt-1">
-                  Nível atual: <strong>{{ form.level }}</strong>
+                  <i class="pi pi-info-circle mr-0.5"></i>
+                  Alterar o nível atualizará a tabela de habilidades do aluno.
                 </p>
               </div>
 
@@ -615,6 +615,7 @@ async function saveStudent() {
         nome: form.value.name,
         dataNascimento: form.value.dataNascimento || null,
         telefoneResponsavel: form.value.contact,
+        nivelId: form.value.nivelId || null,
         novasTurmasIds: form.value.turmasIds,
       })
     } else {
