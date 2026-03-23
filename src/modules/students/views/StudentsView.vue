@@ -167,6 +167,32 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Paginação -->
+      <div v-if="studentsStore.pagination.totalPages > 1" class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+        <span class="text-sm text-slate-500">
+          Mostrando página {{ studentsStore.pagination.currentPage + 1 }} de {{ studentsStore.pagination.totalPages }} (Total: {{ studentsStore.pagination.totalElements }})
+        </span>
+        <div class="flex items-center gap-1">
+          <button @click="mudarPagina(0)" :disabled="studentsStore.pagination.currentPage === 0" class="px-2.5 py-1.5 text-sm border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed" title="Primeira">
+            <i class="pi pi-angle-double-left text-xs"></i>
+          </button>
+          <button @click="mudarPagina(studentsStore.pagination.currentPage - 1)" :disabled="studentsStore.pagination.currentPage === 0" class="px-2.5 py-1.5 text-sm border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed" title="Anterior">
+            <i class="pi pi-angle-left text-xs"></i>
+          </button>
+          
+          <button v-for="p in paginasVisiveis" :key="p" @click="mudarPagina(p)" :class="p === studentsStore.pagination.currentPage ? 'bg-sky-50 text-sky-600 border-sky-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'" class="w-8 h-8 flex items-center justify-center text-sm border rounded-md transition-colors">
+            {{ p + 1 }}
+          </button>
+
+          <button @click="mudarPagina(studentsStore.pagination.currentPage + 1)" :disabled="studentsStore.pagination.currentPage === studentsStore.pagination.totalPages - 1" class="px-2.5 py-1.5 text-sm border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed" title="Próxima">
+            <i class="pi pi-angle-right text-xs"></i>
+          </button>
+          <button @click="mudarPagina(studentsStore.pagination.totalPages - 1)" :disabled="studentsStore.pagination.currentPage === studentsStore.pagination.totalPages - 1" class="px-2.5 py-1.5 text-sm border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed" title="Última">
+            <i class="pi pi-angle-double-right text-xs"></i>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div
@@ -444,7 +470,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import { useStudentsStore } from '../stores/students'
 import { useClassesStore } from '../../classes/stores/classes'
@@ -519,13 +545,6 @@ const turmasFiltradas = computed(() => {
 const alunosFiltrados = computed(() => {
   let lista = studentsStore.students
 
-  if (buscaNome.value.trim()) {
-    const q = buscaNome.value.trim().toLowerCase()
-    lista = lista.filter((s: any) =>
-      (s.name ?? s.nome ?? '').toLowerCase().includes(q)
-    )
-  }
-
   if (filtroProfessor.value) {
     const turmasDoProf = classesStore.classes
       .filter((c: any) => c.professor?.nome === filtroProfessor.value)
@@ -538,6 +557,40 @@ const alunosFiltrados = computed(() => {
   }
 
   return lista
+})
+
+let debounceTimeout: any = null
+watch(buscaNome, (newVal) => {
+  clearTimeout(debounceTimeout)
+  debounceTimeout = setTimeout(() => {
+    studentsStore.fetchStudents({ page: 0, nome: newVal })
+  }, 500)
+})
+
+async function mudarPagina(page: number) {
+  if (page < 0 || page >= studentsStore.pagination.totalPages) return
+  await studentsStore.fetchStudents({ page, nome: buscaNome.value })
+}
+
+const paginasVisiveis = computed(() => {
+  const current = studentsStore.pagination.currentPage
+  const total = studentsStore.pagination.totalPages
+  
+  if (total <= 5) return Array.from({ length: total }, (_, i) => i)
+  
+  let start = Math.max(0, current - 2)
+  let end = Math.min(total - 1, current + 2)
+  
+  if (end - start < 4) {
+    if (start === 0) end = Math.min(4, total - 1)
+    else if (end === total - 1) start = Math.max(0, total - 5)
+  }
+  
+  const pages = []
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  return pages
 })
 
 onMounted(async () => {

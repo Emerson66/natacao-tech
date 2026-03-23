@@ -17,6 +17,13 @@ export const useStudentsStore = defineStore('students', () => {
   const students = ref<Student[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  
+  const pagination = ref({
+    currentPage: 0,
+    totalPages: 0,
+    totalElements: 0,
+    size: 30
+  })
 
   function mapAluno(a: any): Student {
     let listaTurmas: string[] = []
@@ -54,13 +61,31 @@ export const useStudentsStore = defineStore('students', () => {
     }
   }
 
-  async function fetchStudents() {
+  async function fetchStudents(params: { page?: number; size?: number; nome?: string; nivelUuid?: string } = {}) {
     loading.value = true
     error.value = null
+    const page = params.page ?? pagination.value.currentPage
+    const size = params.size ?? pagination.value.size
+
     try {
-      const response = await api.get('/api/alunos')
+      const query = new URLSearchParams()
+      query.append('page', String(page))
+      query.append('size', String(size))
+      if (params.nome) query.append('nome', params.nome)
+      if (params.nivelUuid) query.append('nivelUuid', params.nivelUuid)
+
+      const response = await api.get(`/api/alunos?${query.toString()}`)
       const data = response.data?.content ?? response.data ?? []
       students.value = Array.isArray(data) ? data.map(mapAluno) : []
+      
+      if (response.data && response.data.totalPages !== undefined) {
+        pagination.value = {
+          currentPage: response.data.number,
+          totalPages: response.data.totalPages,
+          totalElements: response.data.totalElements,
+          size: response.data.size
+        }
+      }
     } catch (err: any) {
       console.error('Erro ao buscar alunos:', err)
       error.value = err.response?.data?.message ?? 'Falha ao carregar alunos.'
@@ -119,6 +144,7 @@ export const useStudentsStore = defineStore('students', () => {
     students,
     loading,
     error,
+    pagination,
     fetchStudents,
     addStudent,
     updateStudent,
