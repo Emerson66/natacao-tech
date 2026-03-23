@@ -31,6 +31,7 @@ const selectedStudentUuid = ref<string>('')
 const history = ref<HistoricoAvaliacaoDTO[]>([])
 const loadingHistory = ref(false)
 const downloading = ref(false)
+const sendingWA = ref(false)
 
 const showDetailModal = ref(false)
 const selectedReport = ref<any>(null)
@@ -151,15 +152,38 @@ function viewReport(data: HistoricoAvaliacaoDTO) {
   showDetailModal.value = true
 }
 
-function sendToWhatsApp() {
-  if (!selectedReport.value) return
-  const text =
-    `Olá! Confira o relatório de natação:\n` +
-    `📅 Data: ${selectedReport.value.data}\n` +
-    `🏊 Nível: ${selectedReport.value.nivel}\n` +
-    `⭐ Aprovadas: ${selectedReport.value.pontuacao} habilidade(s)\n` +
-    `💬 Feedback: ${selectedReport.value.feedback}`
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+async function sendToWhatsApp() {
+  if (!selectedReport.value?.uuid) return
+  sendingWA.value = true
+  try {
+    await api.post(`/api/whatsapp/enviar-avaliacao/${selectedReport.value.uuid}`)
+    toast.add({ severity: 'success', summary: 'WhatsApp enviado!', life: 5000 })
+  } catch (e: any) {
+    const status = e.response?.status
+    if (!status || status === 404 || status === 501) {
+      const text =
+        `Olá! Confira o relatório de natação:\n` +
+        `📅 Data: ${selectedReport.value.data}\n` +
+        `🏊 Nível: ${selectedReport.value.nivel}\n` +
+        `⭐ Aprovadas: ${selectedReport.value.pontuacao} habilidade(s)\n` +
+        `💬 Feedback: ${selectedReport.value.feedback}`
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+      toast.add({
+        severity: 'info',
+        summary: 'Abrindo WhatsApp',
+        detail: 'Redirecionado para WhatsApp Web.',
+        life: 4000,
+      })
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Erro ao enviar',
+        detail: e.response?.data?.message ?? 'Falha ao enviar.',
+      })
+    }
+  } finally {
+    sendingWA.value = false
+  }
 }
 
 async function downloadPDF() {
@@ -521,6 +545,7 @@ function limparFiltros() {
             icon="pi pi-whatsapp"
             severity="success"
             class="w-full"
+            :loading="sendingWA"
             @click="sendToWhatsApp"
           />
         </div>
