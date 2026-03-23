@@ -48,9 +48,11 @@
 
         <select
           v-model="filtroProfessor"
+          @change="onFiltroProfessorChange"
           class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:border-sky-400"
         >
           <option value="">Todas as turmas</option>
+          <option value="sem_turma">Sem turma</option>
           <option v-for="p in professoresUnicos" :key="p" :value="p">
             {{ p }}
           </option>
@@ -545,7 +547,7 @@ const turmasFiltradas = computed(() => {
 const alunosFiltrados = computed(() => {
   let lista = studentsStore.students
 
-  if (filtroProfessor.value) {
+  if (filtroProfessor.value && filtroProfessor.value !== 'sem_turma') {
     const turmasDoProf = classesStore.classes
       .filter((c: any) => c.professor?.nome === filtroProfessor.value)
       .map((c: any) => c.nome)
@@ -563,13 +565,21 @@ let debounceTimeout: any = null
 watch(buscaNome, (newVal) => {
   clearTimeout(debounceTimeout)
   debounceTimeout = setTimeout(() => {
-    studentsStore.fetchStudents({ page: 0, nome: newVal })
+    studentsStore.fetchStudents({ page: 0, nome: newVal, semTurma: filtroProfessor.value === 'sem_turma' })
   }, 500)
 })
 
+async function onFiltroProfessorChange() {
+  await studentsStore.fetchStudents({
+    page: 0,
+    nome: buscaNome.value,
+    semTurma: filtroProfessor.value === 'sem_turma'
+  })
+}
+
 async function mudarPagina(page: number) {
   if (page < 0 || page >= studentsStore.pagination.totalPages) return
-  await studentsStore.fetchStudents({ page, nome: buscaNome.value })
+  await studentsStore.fetchStudents({ page, nome: buscaNome.value, semTurma: filtroProfessor.value === 'sem_turma' })
 }
 
 const paginasVisiveis = computed(() => {
@@ -606,7 +616,7 @@ async function toggleFiltro() {
   if (mostrarApenasMeus.value && studentsStore.fetchMeusAlunos) {
     await studentsStore.fetchMeusAlunos()
   } else {
-    await studentsStore.fetchStudents()
+    await studentsStore.fetchStudents({ semTurma: filtroProfessor.value === 'sem_turma' })
   }
 }
 

@@ -61,7 +61,7 @@ export const useStudentsStore = defineStore('students', () => {
     }
   }
 
-  async function fetchStudents(params: { page?: number; size?: number; nome?: string; nivelUuid?: string } = {}) {
+  async function fetchStudents(params: { page?: number; size?: number; nome?: string; nivelUuid?: string; semTurma?: boolean } = {}) {
     loading.value = true
     error.value = null
     const page = params.page ?? pagination.value.currentPage
@@ -73,6 +73,7 @@ export const useStudentsStore = defineStore('students', () => {
       query.append('size', String(size))
       if (params.nome) query.append('nome', params.nome)
       if (params.nivelUuid) query.append('nivelUuid', params.nivelUuid)
+      if (params.semTurma) query.append('semTurma', 'true')
 
       const response = await api.get(`/api/alunos?${query.toString()}`)
       const data = response.data?.content ?? response.data ?? []
