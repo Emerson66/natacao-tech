@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import api from '@/core/services/api'
 import type { HistoricoAvaliacaoDTO } from '@/core/types/api'
@@ -21,6 +21,9 @@ interface AlunoOpcao {
 
 const todosAlunos = ref<AlunoOpcao[]>([])
 const loadingAlunos = ref(false)
+const loadingMore = ref(false)
+const currentPage = ref(0)
+const totalPages = ref(1)
 
 const buscaNome = ref('')
 const filtroNivel = ref('')
@@ -36,13 +39,37 @@ const sendingWA = ref(false)
 const showDetailModal = ref(false)
 const selectedReport = ref<any>(null)
 
-onMounted(async () => {
-  loadingAlunos.value = true
-  try {
-    const { data } = await api.get('/api/alunos')
-    const lista = Array.isArray(data) ? data : (data?.content ?? [])
+async function fetchAlunos(isNewSearch = false) {
+  if (isNewSearch) {
+    currentPage.value = 0
+    loadingAlunos.value = true
+    todosAlunos.value = []
+  } else {
+    if (currentPage.value >= totalPages.value || loadingMore.value) return
+    loadingMore.value = true
+  }
 
-    todosAlunos.value = lista
+  try {
+    const params = new URLSearchParams()
+    params.append('page', String(currentPage.value))
+    params.append('size', '30')
+    if (buscaNome.value.trim()) {
+      params.append('nome', buscaNome.value.trim())
+    }
+
+    const { data } = await api.get(`/api/alunos?${params.toString()}`)
+    
+    if (data && typeof data.totalPages === 'number') {
+      totalPages.value = data.totalPages
+      currentPage.value = data.number + 1
+    } else {
+      totalPages.value = 1
+      currentPage.value = 1
+    }
+
+    const lista = Array.isArray(data) ? data : (data?.content ?? [])
+    
+    const mapped = lista
       .map((a: any) => ({
         label: (a.nome ?? a.name ?? '').trim(),
         value: a.uuid ?? a.id ?? '',
@@ -56,9 +83,17 @@ onMounted(async () => {
             : [],
       }))
       .filter((a: AlunoOpcao) => a.label && a.value)
-      .sort((a: AlunoOpcao, b: AlunoOpcao) =>
-        a.label.localeCompare(b.label, 'pt-BR')
-      )
+
+    if (isNewSearch) {
+      todosAlunos.value = mapped
+    } else {
+      const existing = new Set(todosAlunos.value.map((x: AlunoOpcao) => x.value))
+      for (const m of mapped) {
+        if (!existing.has(m.value)) {
+          todosAlunos.value.push(m)
+        }
+      }
+    }
   } catch (e) {
     toast.add({
       severity: 'error',
@@ -67,8 +102,28 @@ onMounted(async () => {
     })
   } finally {
     loadingAlunos.value = false
+    loadingMore.value = false
   }
+}
+
+onMounted(() => {
+  fetchAlunos(true)
 })
+
+let debounceTimer: ReturnType<typeof setTimeout>
+watch(buscaNome, () => {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => fetchAlunos(true), 400)
+})
+
+function onScrollList(e: Event) {
+  const target = e.target as HTMLElement
+  if (target.scrollHeight - target.scrollTop <= target.clientHeight + 40) {
+    if (!loadingMore.value && !loadingAlunos.value) {
+      fetchAlunos(false)
+    }
+  }
+}
 
 const niveisUnicos = computed(() => {
   const set = new Set<string>()
@@ -91,11 +146,7 @@ const turmasUnicas = computed(() => {
 const alunosFiltrados = computed(() => {
   let lista = todosAlunos.value
 
-  const q = buscaNome.value.trim().toLowerCase()
-  if (q) {
-    lista = lista.filter((a) => a.label.toLowerCase().includes(q))
-  }
-
+  // Name filtering is done on the server via watch
   if (filtroNivel.value) {
     lista = lista.filter((a) => a.nivel === filtroNivel.value)
   }
@@ -322,9 +373,8 @@ function limparFiltros() {
 
         <div
           class="border border-slate-200 rounded-lg overflow-hidden"
-          :class="
-            alunosFiltrados.length === 0 ? '' : 'max-h-56 overflow-y-auto'
-          "
+          :class="alunosFiltrados.length === 0 ? '' : 'max-h-56 overflow-y-auto'"
+          @scroll="onScrollList"
         >
           <div
             v-if="alunosFiltrados.length === 0"
@@ -369,9 +419,9 @@ function limparFiltros() {
                     class="mx-1 text-slate-300"
                     >·</span
                   >
-                  <span v-if="aluno.turmas?.length"
+                  <span v-if="aluno.turmas && aluno.turmas.length > 0"
                     >{{ aluno.turmas.slice(0, 2).join(', ')
-                    }}<span v-if="aluno.turmas.length > 2">
+                    }}<span v-if="aluno.turmas && aluno.turmas.length > 2">
                       +{{ aluno.turmas.length - 2 }}</span
                     ></span
                   >
@@ -383,6 +433,10 @@ function limparFiltros() {
               class="pi pi-check-circle text-sky-500 shrink-0 ml-2"
             ></i>
           </button>
+          
+          <div v-if="loadingMore" class="p-3 text-center text-xs text-sky-500 font-medium bg-slate-50 border-t border-slate-100">
+            <i class="pi pi-spin pi-spinner mr-1"></i> Carregando mais...
+          </div>
         </div>
       </div>
     </div>
