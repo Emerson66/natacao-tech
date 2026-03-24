@@ -57,20 +57,33 @@ export const useAcademiesStore = defineStore('academies', () => {
   }
 
   /**
-   * REGRA DE OURO: Para Multipart/FormData, NÃO definimos o Content-Type.
-   * Ao passar 'undefined', o Axios remove o default 'application/json' 
-   * e o navegador gera o boundary correto automaticamente.
+   * REGRA DE OURO DEFINITIVA: 
+   * Usamos 'fetch' nativo para evitar que interceptores do Axios 
+   * corrompam o FormData ou forcem headers indesejados.
    */
   async function uploadLogo(uuid: string, file: File) {
     const formData = new FormData()
-    formData.append('logo', file) // A chave deve ser exatamente 'logo'
+    formData.append('logo', file)
 
-    await api.post(`/api/academias/${uuid}/logo`, formData, {
+    const token = localStorage.getItem('token')
+    const baseURL = import.meta.env.VITE_API_URL || ''
+
+    const response = await fetch(`${baseURL}/api/academias/${uuid}/logo`, {
+      method: 'POST',
+      body: formData,
       headers: {
-        'Content-Type': undefined,
-      },
+        'Authorization': `Bearer ${token}`
+        // NOTA: NÃO definimos Content-Type aqui. 
+        // O navegador injeta o boundary correto automaticamente.
+      }
     })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.mensagem || errorData.message || `Erro no upload: ${response.status}`)
+    }
   }
+
 
   return {
     fetchAcademias,
