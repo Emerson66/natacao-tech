@@ -46,13 +46,9 @@ export const useAcademiesStore = defineStore('academies', () => {
 
   async function uploadLogo(uuid: string, file: File) {
     const formData = new FormData()
-    formData.append('logo', file) // Chave exata "logo" como pedido
+    formData.append('logo', file)
 
-    await api.post(`/api/academias/${uuid}/logo`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    await api.post(`/api/academias/${uuid}/logo`, formData)
   }
 
   return {
