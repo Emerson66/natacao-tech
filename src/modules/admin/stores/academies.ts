@@ -7,36 +7,48 @@ export const useAcademiesStore = defineStore('academies', () => {
     return response.data
   }
 
-  async function createAcademia(payload: any, logoFile?: File) {
-    // Passo 1: Criar a academia com os dados de texto
+  /**
+   * Passo 1: Criar a academia (JSON)
+   * Passo 2: Upload da logo (Multipart) se houver arquivo
+   */
+  async function createAcademia(payload: any, logoFile?: File | null) {
+    // 1. Criar dados de texto (envio como JSON padrão)
     const response = await api.post('/api/academias', payload)
-    const { uuid } = response.data
+    const academiaCriada = response.data
+    const uuid = academiaCriada.uuid
 
-    // Passo 2: Se houver logo, fazer o upload
-    if (logoFile) {
+    // 2. Se o componente passou um arquivo físico, faz o upload na sequência
+    if (logoFile instanceof File) {
       try {
         await uploadLogo(uuid, logoFile)
       } catch (error) {
-        console.error('Erro ao fazer upload da logo:', error)
-        throw new Error('Academia criada com sucesso, mas houve um erro ao enviar a logo.')
+        console.error('Erro no upload da logo após criação:', error)
+        // Opcional: Notificar que os dados foram salvos mas a logo falhou
+        throw new Error('Academia criada, mas houve um erro ao enviar a logo.')
       }
     }
-    return response.data
+
+    return academiaCriada
   }
 
-  async function updateAcademia(uuid: string, payload: any, logoFile?: File) {
-    // Passo 1: Atualizar dados de texto
+  /**
+   * Passo 1: Atualizar dados (JSON)
+   * Passo 2: Upload de nova logo se fornecida
+   */
+  async function updateAcademia(uuid: string, payload: any, logoFile?: File | null) {
+    // 1. Atualizar dados de texto
     const response = await api.put(`/api/academias/${uuid}`, payload)
 
-    // Passo 2: Se houver uma nova logo, fazer o upload
-    if (logoFile) {
+    // 2. Se houver um novo arquivo de logo físico
+    if (logoFile instanceof File) {
       try {
         await uploadLogo(uuid, logoFile)
       } catch (error) {
-        console.error('Erro ao atualizar a logo:', error)
-        throw new Error('Dados da academia atualizados, mas houve um erro ao enviar a nova logo.')
+        console.error('Erro no upload da logo na atualização:', error)
+        throw new Error('Dados atualizados, mas houve um erro ao enviar a nova logo.')
       }
     }
+
     return response.data
   }
 
@@ -44,11 +56,20 @@ export const useAcademiesStore = defineStore('academies', () => {
     await api.delete(`/api/academias/${uuid}`)
   }
 
+  /**
+   * REGRA DE OURO: Para Multipart/FormData, NÃO definimos o Content-Type.
+   * Ao passar 'undefined', o Axios remove o default 'application/json' 
+   * e o navegador gera o boundary correto automaticamente.
+   */
   async function uploadLogo(uuid: string, file: File) {
     const formData = new FormData()
-    formData.append('logo', file)
+    formData.append('logo', file) // A chave deve ser exatamente 'logo'
 
-    await api.post(`/api/academias/${uuid}/logo`, formData)
+    await api.post(`/api/academias/${uuid}/logo`, formData, {
+      headers: {
+        'Content-Type': undefined,
+      },
+    })
   }
 
   return {
@@ -59,3 +80,4 @@ export const useAcademiesStore = defineStore('academies', () => {
     uploadLogo,
   }
 })
+
