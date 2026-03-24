@@ -2,7 +2,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import api from '@/core/services/api'
 
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -12,8 +11,11 @@ import InputIcon from 'primevue/inputicon'
 import ConfirmDialog from 'primevue/confirmdialog'
 import Tooltip from 'primevue/tooltip'
 
+import { useAcademiesStore } from '@/modules/admin/stores/academies'
+
 const toast = useToast()
 const confirm = useConfirm()
+const academiesStore = useAcademiesStore()
 const vTooltip = Tooltip
 
 interface Academia {
@@ -64,8 +66,7 @@ onMounted(carregarAcademias)
 async function carregarAcademias() {
   loadingAcad.value = true
   try {
-    const { data } = await api.get<Academia[]>('/api/academias')
-    academias.value = data
+    academias.value = await academiesStore.fetchAcademias()
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -164,21 +165,10 @@ async function salvarAcad() {
       cnpj: formAcad.value.cnpj || null,
     }
 
-    let currentUuid = uuidAcad.value
-
-    if (editandoAcad.value && currentUuid) {
-      await api.put(`/api/academias/${currentUuid}`, payload)
+    if (editandoAcad.value && uuidAcad.value) {
+      await academiesStore.updateAcademia(uuidAcad.value, payload, logoAcad.value)
     } else {
-      const { data } = await api.post('/api/academias', payload)
-      currentUuid = data.uuid
-    }
-
-    if (logoAcad.value && currentUuid) {
-      const formLogo = new FormData()
-      formLogo.append('file', logoAcad.value)
-      await api.post(`/api/academias/${currentUuid}/logo`, formLogo, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      await academiesStore.createAcademia(payload, logoAcad.value)
     }
 
     toast.add({
@@ -193,6 +183,7 @@ async function salvarAcad() {
       severity: 'error',
       summary: 'Erro ao salvar',
       detail:
+        e.message ||
         e.response?.data?.mensagem ||
         e.response?.data?.message ||
         'Verifique os dados.',
@@ -212,7 +203,7 @@ function excluirAcad(acad: Academia) {
     acceptClass: 'p-button-danger',
     accept: async () => {
       try {
-        await api.delete(`/api/academias/${acad.uuid}`)
+        await academiesStore.deleteAcademia(acad.uuid)
         academias.value = academias.value.filter((a) => a.uuid !== acad.uuid)
         toast.add({
           severity: 'success',
