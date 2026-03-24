@@ -11,6 +11,7 @@ import Dialog from 'primevue/dialog'
 import ConfirmDialog from 'primevue/confirmdialog'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
+import Textarea from 'primevue/textarea'
 import Tooltip from 'primevue/tooltip'
 
 const vTooltip = Tooltip
@@ -26,6 +27,7 @@ interface Nivel {
   uuid: string
   nome: string
   corTouca: string | null
+  descricao: string | null
 }
 
 const niveis = ref<Nivel[]>([])
@@ -37,7 +39,7 @@ const submitting = ref(false)
 const editando = ref(false)
 const uuidEditando = ref<string | null>(null)
 
-const form = ref({ nome: '', corTouca: '#0ea5e9' })
+const form = ref({ nome: '', corTouca: '#0ea5e9', descricao: '' })
 const erros = ref({ nome: '' })
 
 const nivelFiltrados = computed(() => {
@@ -67,7 +69,7 @@ async function carregarNiveis() {
 function abrirCriar() {
   editando.value = false
   uuidEditando.value = null
-  form.value = { nome: '', corTouca: '#0ea5e9' }
+  form.value = { nome: '', corTouca: '#0ea5e9', descricao: '' }
   erros.value = { nome: '' }
   modalVisible.value = true
 }
@@ -75,7 +77,11 @@ function abrirCriar() {
 function abrirEditar(nivel: Nivel) {
   editando.value = true
   uuidEditando.value = nivel.uuid
-  form.value = { nome: nivel.nome, corTouca: nivel.corTouca || '#0ea5e9' }
+  form.value = {
+    nome: nivel.nome,
+    corTouca: nivel.corTouca || '#0ea5e9',
+    descricao: nivel.descricao || '',
+  }
   erros.value = { nome: '' }
   modalVisible.value = true
 }
@@ -96,6 +102,7 @@ async function salvar() {
     const payload = {
       nome: form.value.nome.trim(),
       corTouca: form.value.corTouca || null,
+      descricao: form.value.descricao?.trim() || null,
     }
 
     if (editando.value && uuidEditando.value) {
@@ -359,6 +366,20 @@ function corTexto(hex: string | null): string {
           </div>
           <small class="text-slate-400 text-xs">
             Selecione no seletor ou insira o código hexadecimal.
+          </small>
+        </div>
+ 
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm font-semibold text-slate-700">Descrição</label>
+          <Textarea
+            v-model="form.descricao"
+            placeholder="Objetivos motores, psicossociais e detalhes do nível..."
+            rows="5"
+            autoResize
+            class="w-full text-sm"
+          />
+          <small class="text-slate-400 text-xs">
+            Descreva os objetivos e critérios deste nível.
           </small>
         </div>
 

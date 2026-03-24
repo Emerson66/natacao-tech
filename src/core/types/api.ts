@@ -2,6 +2,7 @@ export interface NivelDTO {
   uuid: string
   nome: string
   corTouca?: string | null
+  descricao?: string | null
 }
 
 export interface ProfessorResumoDTO {
