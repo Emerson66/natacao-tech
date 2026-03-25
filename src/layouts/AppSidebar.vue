@@ -28,6 +28,11 @@ const menuItems = computed(() => {
       icon: 'pi pi-chart-bar',
       route: '/reports',
     })
+    items.push({
+      label: 'Rel. Avaliações',
+      icon: 'pi pi-clipboard',
+      route: '/relatorio-periodo',
+    })
   }
 
   return items

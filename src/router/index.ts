@@ -69,6 +69,18 @@ const router = createRouter({
             allowedRoles: ['DIRETOR', 'COORDENADOR', 'PROFESSOR'],
           },
         },
+        {
+          path: 'relatorio-periodo',
+          name: 'relatorio-periodo',
+          component: () =>
+            import(
+              '@/modules/reports/views/RelatorioPeriodoView.vue'
+            ),
+          meta: {
+            requiresAuth: true,
+            allowedRoles: ['DIRETOR', 'COORDENADOR', 'PROFESSOR'],
+          },
+        },
         { path: 'classes', name: 'classes', component: ClassesView },
         {
           path: 'perfil',

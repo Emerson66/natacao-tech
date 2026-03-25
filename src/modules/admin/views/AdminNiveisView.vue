@@ -74,7 +74,7 @@ function abrirCriar() {
   modalVisible.value = true
 }
 
-function abrirEditar(nivel: Nivel) {
+async function abrirEditar(nivel: Nivel) {
   editando.value = true
   uuidEditando.value = nivel.uuid
   form.value = {
@@ -84,6 +84,15 @@ function abrirEditar(nivel: Nivel) {
   }
   erros.value = { nome: '' }
   modalVisible.value = true
+
+  try {
+    const { data } = await api.get<Nivel>(`/api/niveis/${nivel.uuid}`)
+    form.value.descricao = data.descricao || ''
+    form.value.nome = data.nome ?? form.value.nome
+    form.value.corTouca = data.corTouca || form.value.corTouca
+  } catch {
+    // usa os dados já carregados da listagem
+  }
 }
 
 function validar(): boolean {
