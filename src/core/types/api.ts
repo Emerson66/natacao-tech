@@ -10,6 +10,7 @@ export interface ProfessorResumoDTO {
   usuarioUuid: string
   nome: string
   email: string
+  academiaId: string
   nomeAcademia: string
   cargo?: string | null
 }

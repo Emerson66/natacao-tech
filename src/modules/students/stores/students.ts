@@ -131,7 +131,7 @@ export const useStudentsStore = defineStore('students', () => {
     const { novasTurmasIds, ...dadosAluno } = payload
     await api.put(`/api/alunos/${id}`, dadosAluno)
     if (novasTurmasIds !== undefined) {
-      await api.patch(`/api/alunos/${id}/transferencia`, { novasTurmasIds })
+      await api.put(`/api/alunos/${id}/turmas`, { turmasIds: novasTurmasIds })
     }
     await fetchStudents()
   }
